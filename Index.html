@@ -1044,7 +1044,7 @@ function ctx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
-ffunction playBrandSting() {
+function playBrandSting() {
   if (muted) return;
   const audio = new Audio('assets/LatelandSL.mp3');
   audio.volume = 0.5;
