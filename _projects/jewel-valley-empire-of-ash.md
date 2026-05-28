@@ -5,6 +5,6 @@ topics:
   - game
 kind: INTERACTIVE
 image: /uploads/empire-of-ash.jpg
-blurb: Lateland is proud to present the recently unearthed game that destroyed a
-  media giant, and predicted a decade of real world turmoil.
+blurb: The recently unearthed game that destroyed a media giant, and predicted a
+  decade of real world turmoil.
 ---
