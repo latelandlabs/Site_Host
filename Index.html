@@ -744,15 +744,34 @@ function parseProject(raw) {
   const match = raw.match(/^---\n([\s\S]*?)\n---/);
   if (!match) return null;
   const meta = {};
-  match[1].split('\n').forEach(line => {
-    const [k, ...v] = line.split(':');
-    if (k) meta[k.trim()] = v.join(':').trim().replace(/^"|"$/g, '');
+  const lines = match[1].split('\n');
+  let currentKey = null;
+  let listItems = [];
+
+  lines.forEach(line => {
+    const listMatch = line.match(/^\s+-\s+(.+)/);
+    const keyMatch = line.match(/^(\w+):\s*(.*)/);
+
+    if (listMatch && currentKey) {
+      listItems.push(listMatch[1].trim());
+      meta[currentKey] = listItems;
+    } else if (keyMatch) {
+      currentKey = keyMatch[1].trim();
+      listItems = [];
+      const val = keyMatch[2].trim().replace(/^"|"$/g, '');
+      if (val) meta[currentKey] = val;
+    }
   });
+
+  const topics = Array.isArray(meta.topics)
+    ? meta.topics
+    : meta.topics ? meta.topics.replace(/[\[\]]/g, '').split(',').map(t => t.trim()) : [];
+
   return {
-    id: meta.title?.toLowerCase().replace(/\s+/g, '-'),
+    id: (meta.title || '').toLowerCase().replace(/\s+/g, '-'),
     title: meta.title || '',
     sub: meta.sub || '',
-    topics: meta.topics ? meta.topics.replace(/[\[\]]/g, '').split(',').map(t => t.trim()) : [],
+    topics,
     kind: meta.kind || '',
     bg: meta.image ? `url('${meta.image}')` : 'linear-gradient(135deg, #1a0033 0%, #5a00ff 55%, #0a0014 100%)',
     blurb: meta.blurb || ''
