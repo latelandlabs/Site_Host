@@ -1050,36 +1050,6 @@ function playBrandSting() {
   audio.volume = 0.5;
   audio.play().catch(e => {});
 }
-
-  const notes = [880, 1108.73, 1318.51, 1760, 1318.51, 880];
-  notes.forEach((f, i) => {
-    const t = now + 0.15 + i * 0.12;
-    const o = ac.createOscillator();
-    const g = ac.createGain();
-    o.type = "triangle";
-    o.frequency.value = f;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.18, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
-    const f1 = ac.createBiquadFilter();
-    f1.type = "lowpass"; f1.frequency.value = 4200;
-    o.connect(f1).connect(g).connect(master);
-    o.start(t); o.stop(t + 0.4);
-  });
-
-  const swell = ac.createOscillator();
-  const swellG = ac.createGain();
-  swell.type = "sawtooth";
-  swell.frequency.setValueAtTime(110, now + 1.0);
-  swell.frequency.exponentialRampToValueAtTime(330, now + 1.9);
-  swellG.gain.setValueAtTime(0, now + 1.0);
-  swellG.gain.linearRampToValueAtTime(0.12, now + 1.5);
-  swellG.gain.linearRampToValueAtTime(0.0, now + 2.3);
-  const bp = ac.createBiquadFilter();
-  bp.type = "bandpass"; bp.Q.value = 1.2; bp.frequency.value = 800;
-  swell.connect(bp).connect(swellG).connect(master);
-  swell.start(now + 1.0); swell.stop(now + 2.4);
-}
 function playClick() {
   if (muted) return;
   const ac = ctx();
