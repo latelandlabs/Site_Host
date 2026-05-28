@@ -607,6 +607,7 @@
     opacity: 0.7;
   }
 </style>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
 
@@ -1182,6 +1183,17 @@ setTimeout(enter, 3200);
 
 // Any tap/keypress before then will also let audio play
 document.addEventListener("pointerdown", () => { try { ctx().resume(); } catch (e) {} }, { once: true });
+</script>
+  <script>
+  if (window.netlifyIdentity) {
+    window.netlifyIdentity.on("init", user => {
+      if (!user) {
+        window.netlifyIdentity.on("login", () => {
+          document.location.href = "/admin/";
+        });
+      }
+    });
+  }
 </script>
 </body>
 </html>
