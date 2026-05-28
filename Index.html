@@ -727,50 +727,37 @@
 /* ------------------------------------------------------------------ */
 /* DATA                                                                */
 /* ------------------------------------------------------------------ */
-const PROJECTS = [
-  {
-    id: "office-therapy", title: "Office Therapy", sub: "Be a better you, for us",
-    topics: ["game"],
-    kind: "INTERACTIVE",
-    bg: "url('assets/office-therapy.jpg')",
-    blurb: "A satirical first-person office sim where wellness mandates spiral into corporate liability."
-  },
-  {
-    id: "jewel-valley", title: "Jewel Valley", sub: "An after-hours fantasy",
-    topics: ["game", "video"],
-    kind: "GAME · VIDEO",
-    bg: "url('assets/jewel-valley.jpg')",
-    blurb: "Pixel-cathedral exploration short, expanded into a playable demo."
-  },
-  {
-    id: "soup-season", title: "Soup Season", sub: "Cody Cannon · stand-up special",
-    topics: ["video"],
-    kind: "SPECIAL",
-    bg: "url('assets/soup-season.jpg')",
-    blurb: "Hour-long set captured in a basement bar in Pittsburgh. Director cut + behind-the-scenes."
-  },
-  {
-    id: "midnight-arcade", title: "Midnight Arcade", sub: "Late-night livestream",
-    topics: ["event", "video"],
-    kind: "RECURRING EVENT",
-    bg: "linear-gradient(135deg, #2c0a4f 0%, #5a00ff 60%, #11002a 100%)",
-    blurb: "Monthly livestream event, played to a live studio audience. Tickets drop the first of every month."
-  },
-  {
-    id: "field-notes", title: "Field Notes", sub: "Long-form writing",
-    topics: ["blog"],
-    kind: "JOURNAL",
-    bg: "linear-gradient(180deg, #0a0a14 0%, #1a1430 50%, #050010 100%)",
-    blurb: "Process notes, post-mortems, and shop-talk on building games and shows from the studio."
-  },
-  {
-    id: "lateland-live", title: "Lateland Live", sub: "Showcase tour",
-    topics: ["event"],
-    kind: "TOUR",
-    bg: "linear-gradient(135deg, #1a0033 0%, #4a00b3 55%, #0a0014 100%)",
-    blurb: "Touring showcase pairing live comedy, a short film and a hands-on demo room."
+let PROJECTS = [];
+
+async function loadProjects() {
+  try {
+    const res = await fetch('https://api.github.com/repos/latelandlabs/Site_Host/contents/_projects');
+    const files = await res.json();
+    const loaded = await Promise.all(files.map(f => fetch(f.download_url).then(r => r.text())));
+    PROJECTS = loaded.map(parseProject).filter(Boolean);
+  } catch(e) {
+    console.warn('Could not load projects', e);
   }
-];
+}
+
+function parseProject(raw) {
+  const match = raw.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return null;
+  const meta = {};
+  match[1].split('\n').forEach(line => {
+    const [k, ...v] = line.split(':');
+    if (k) meta[k.trim()] = v.join(':').trim().replace(/^"|"$/g, '');
+  });
+  return {
+    id: meta.title?.toLowerCase().replace(/\s+/g, '-'),
+    title: meta.title || '',
+    sub: meta.sub || '',
+    topics: meta.topics ? meta.topics.replace(/[\[\]]/g, '').split(',').map(t => t.trim()) : [],
+    kind: meta.kind || '',
+    bg: meta.image ? `url('${meta.image}')` : 'linear-gradient(135deg, #1a0033 0%, #5a00ff 55%, #0a0014 100%)',
+    blurb: meta.blurb || ''
+  };
+}
 
 let POSTS = [];
 
@@ -1133,7 +1120,7 @@ const app = document.getElementById("app");
 async function enter() {
   // Try to play the sting (may be blocked until first interaction)
   try { playBrandSting(); } catch (e) {}
-  await loadPosts();
+  await Promise.all([loadProjects(), loadPosts()]);
   loader.classList.add("hidden");
   app.classList.add("visible");
   renderSlider();
