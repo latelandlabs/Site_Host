@@ -772,78 +772,39 @@ const PROJECTS = [
   }
 ];
 
-const POSTS = [
-  {
-    id: "shipping-office-therapy",
-    title: "Shipping Office Therapy, six months later",
-    kicker: "DEV LOG · OFFICE THERAPY",
-    date: "MAY 04, 2026",
-    author: "M. CHU",
-    read: "8 MIN READ",
-    tags: ["postmortem", "indie", "unreal"],
-    hero: "linear-gradient(135deg, #0a2148 0%, #5a00ff 60%, #0a0014 100%)",
-    body: `
-      <p>We shipped <em>Office Therapy</em> on a Tuesday night in November, six rewrites and three publishing offers later. What follows isn't a victory lap — it's notes, scraped together while the launch is still warm.</p>
-      <p>The pitch hasn't changed since the first jam build: you are a junior associate at a wellness-mandated firm, and the only way to get promoted is to attend a series of increasingly unhinged mandatory therapy sessions. Everything else changed. The art style changed twice. The soundtrack got an entire act removed. The narrative branched, then unbranched, then quietly grew a third ending we don't really talk about.</p>
-      <h2>What we got right</h2>
-      <ul>
-        <li>Letting the office breathe. Empty rooms doing nothing are still the funniest moments in the game.</li>
-        <li>Recording the dialogue in one weekend, in a basement, with everyone in the same room.</li>
-        <li>Cutting the inventory system. Twice.</li>
-      </ul>
-      <h2>What we got wrong</h2>
-      <p>Three things, and they are all the same thing: we waited too long to play it. There is a version of this build that existed for six weeks last spring where nobody on the team had actually played it end-to-end. When we finally did, we found out that the second act was longer than the first and third combined and that the player character could no longer crouch.</p>
-      <blockquote>"You don't have a game until someone who isn't you has lost in it." — Andy, on a phone call I refused to take seriously at the time.</blockquote>
-      <h2>The numbers, briefly</h2>
-      <p>We don't love talking about numbers in public — but we know that if we don't, the rumor mill will fill in something worse. The game has sold a little under what we'd hoped and slightly more than what would have made us nervous. We're in the very specific zone where it is "fine" and also "could have been a problem" and the two feel identical from inside the studio.</p>
-      <pre>Wishlists at launch   : 41,200
-Conversion           : ~5.1%
-Refund rate          : 2.4%
-Average review length: long, in a good way</pre>
-      <h2>What's next</h2>
-      <p>A short cooldown. Then back to the writing room for a piece that we have been calling, internally, <em>Office Therapy 2: The Wellness Mandate</em>, which we are aware is a terrible name and which is almost certainly not what it will be called when it ships.</p>
-      <p>Thanks for reading. The next post is going to be much less serious and possibly about soup.</p>
-    `
-  },
-  {
-    id: "soup-season-notes",
-    title: "Notes from the floor of Soup Season",
-    kicker: "FIELD NOTES · LIVE",
-    date: "APR 22, 2026",
-    author: "C. CANNON",
-    read: "5 MIN READ",
-    tags: ["live", "comedy", "directing"],
-    hero: "linear-gradient(180deg, #2a1808 0%, #f97316 55%, #1a0d04 100%)",
-    body: `
-      <p>We shot Soup Season in three nights, in three different bars, with three different crews. Here are the things I keep getting asked about on Twitter, in roughly the order they come up.</p>
-      <h2>The mic isn't a prop</h2>
-      <p>The mic in the poster shot is the actual mic we used for the whole set. We didn't sweeten it in post. The room is the room.</p>
-      <h2>The audience was real</h2>
-      <p>People keep asking if we plant laughers. We don't. We did, however, give everyone in the front three rows free soup. This is on the rider. It is not a metaphor.</p>
-      <h2>What I'd do differently</h2>
-      <p>I would have brought a B-camera for the last twenty minutes. We got the show. We didn't get all of the show.</p>
-    `
-  },
-  {
-    id: "designing-for-late-night",
-    title: "Designing UI for one a.m.",
-    kicker: "DESIGN · CRAFT",
-    date: "APR 09, 2026",
-    author: "A. HALE",
-    read: "6 MIN READ",
-    tags: ["design", "ui", "process"],
-    hero: "linear-gradient(135deg, #1a0033 0%, #5a00ff 55%, #0a0014 100%)",
-    body: `
-      <p>Everything we make at Lateland is, on some level, designed to be watched after dark. The site you are reading this on was sketched at 11pm on a Tuesday on a laptop with the brightness all the way down.</p>
-      <h2>One color is not enough</h2>
-      <p>We started with a single purple and a single black. It looked dead. The trick, it turns out, is to let purple have two moods: an early-evening violet that wants to glow, and a 3am indigo that wants to absorb.</p>
-      <h2>Type wants to lean</h2>
-      <p>Rexlia leans forward, which is the whole reason we picked it. We tracked it out, slowed it down, and let it carry the architecture of the page. We don't use a second display face anywhere. We don't need one.</p>
-      <h2>Motion is a load-bearing wall</h2>
-      <p>Almost nothing on this site arrives without moving. We don't think of motion as decoration — it's the part of the design that tells you whether something is interactive.</p>
-    `
+let POSTS = [];
+
+async function loadPosts() {
+  try {
+    const res = await fetch('https://api.github.com/repos/latelandlabs/Site_Host/contents/_posts');
+    const files = await res.json();
+    const loaded = await Promise.all(files.map(f => fetch(f.download_url).then(r => r.text())));
+    POSTS = loaded.map(parseFrontmatter).filter(Boolean);
+  } catch(e) {
+    console.warn('Could not load posts', e);
   }
-];
+}
+
+function parseFrontmatter(raw) {
+  const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!match) return null;
+  const meta = {};
+  match[1].split('\n').forEach(line => {
+    const [k, ...v] = line.split(':');
+    if (k) meta[k.trim()] = v.join(':').trim().replace(/^"|"$/g, '');
+  });
+  return {
+    id: meta.slug || meta.title?.toLowerCase().replace(/\s+/g, '-'),
+    title: meta.title || '',
+    kicker: meta.kicker || 'BLOG',
+    date: meta.date || '',
+    author: meta.author || '',
+    read: meta.read || '',
+    tags: meta.tags ? meta.tags.replace(/[\[\]]/g, '').split(',').map(t => t.trim()) : [],
+    hero: meta.image ? `url('${meta.image}')` : 'linear-gradient(135deg, #1a0033 0%, #5a00ff 55%, #0a0014 100%)',
+    body: match[2].trim()
+  };
+}
 
 const TOPIC_META = {
   all:   { word: "",        title: "" },
@@ -1169,9 +1130,10 @@ document.getElementById("back-to-blog").addEventListener("click", () => {
 const loader = document.getElementById("loader");
 const app = document.getElementById("app");
 
-function enter() {
+async function enter() {
   // Try to play the sting (may be blocked until first interaction)
   try { playBrandSting(); } catch (e) {}
+  await loadPosts();
   loader.classList.add("hidden");
   app.classList.add("visible");
   renderSlider();
